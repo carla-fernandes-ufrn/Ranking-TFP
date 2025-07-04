@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # Roda as migrações
+python manage.py makemigrations
 python manage.py migrate
 
 # Cria o superuser se não existir
