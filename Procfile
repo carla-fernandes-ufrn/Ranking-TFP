@@ -1,1 +1,1 @@
-web: cd Ranking && bash entrypoint.sh
+web: bash entrypoint.sh
