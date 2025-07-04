@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser
 from django.db import models
 
 STATUS = [
@@ -7,7 +7,7 @@ STATUS = [
     ('I', 'Inativo'),
 ]
 
-class Usuario(User):
+class Usuario(AbstractUser):
     telefone = models.CharField(max_length=20, verbose_name="Telefone")
     data_nascimento = models.DateField(verbose_name="Data de Nascimento")
     endereco = models.TextField(blank=True, null=True, verbose_name="Endereço")
