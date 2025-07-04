@@ -1,0 +1,157 @@
+{% extends 'base/base.html' %}
+
+{% block conteudo %}
+<div class="card">
+  <div class="card-body">
+    <h4 class="card-title">Sorteios</h4>
+
+    {% if lista_sorteios %}
+      <div class="row">
+        {% for sorteio in lista_sorteios %}
+          <div class="col-12 col-md-4 mb-4">
+            <div class="card border border-secondary h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="clearfix mb-2">
+                        
+                    <a href="{% url 'jogo:sorteio-detail' sorteio.pk %}">
+                        <h4 class="card-title float-start">{{ sorteio.mes }}/{{ sorteio.ano }}</h4>
+                    </a>
+                    <div class="float-end">
+                        {% if sorteio.status == 'I' %}
+                        <label class="badge bg-info text-white">Indicação</label>
+                        {% elif sorteio.status == 'S' %}
+                        <label class="badge bg-success text-white">Sorteado</label>
+                        {% endif %}
+                    </div>
+                    </div>
+
+                    <p id="quantidade-exibida-{{ sorteio.pk }}">
+                        Meus jogos: {{ sorteio.interesse_do_user.quantidade|default:'-' }}
+                    </p>
+                    {% if sorteio.status == 'I' %}
+                        <p id="total-pedidos-{{ sorteio.pk }}">Total de pedidos: {{ sorteio.total_pedidos }} jogos</p>
+                    {% else %}
+                        <p>Total de partidas: {{ sorteio.partidas.count }} jogos</p>
+                    {% endif %}
+
+                    <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar bg-success"
+                        role="progressbar"
+                        style="width: {{ sorteio.progresso }}%;"
+                        aria-valuenow="{{ sorteio.progresso }}"
+                        aria-valuemin="0"
+                        aria-valuemax="100">
+                        {{ sorteio.progresso }}%
+                    </div>
+                    </div>
+
+                    <ul class="list-arrow">
+                    <li>Sorteados: </li>
+                    <li>Marcados: </li>
+                    <li>Realizados: </li>
+                    <li>Não-realizados: </li>
+                    </ul>
+
+                    <div class="mt-auto d-flex justify-content-between">
+                    {% if request.user.is_superuser %}
+                        <a href="{% url 'jogo:sorteio-update' sorteio.pk %}" class="btn btn-outline-primary btn-sm">Editar</a>
+                    {% else %}
+                        <span></span>
+                    {% endif %}
+
+                    {% if sorteio.status == 'I' %}
+                        <button type="button"
+                            class="btn btn-outline-success btn-sm"
+                            onclick="abrirModalInteresse({{ sorteio.pk }})">
+                            Adicionar Interesse
+                        </button>
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+          </div>
+
+          <!-- Modal -->
+          <div class="modal fade" id="modalInteresse{{ sorteio.pk }}" tabindex="-1" aria-labelledby="modalInteresseLabel{{ sorteio.pk }}" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <form method="post"
+                        class="form-interesse"
+                        action="{% url 'jogo:interesse-save' %}">
+                    {% csrf_token %}
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="modalInteresseLabel{{ sorteio.pk }}">
+                      Interesse para {{ sorteio.mes }}/{{ sorteio.ano }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <input type="hidden" id="sorteio_id_{{ sorteio.pk }}" value="{{ sorteio.pk }}">
+                    <label>Quantidade de jogos</label>
+                    <input type="number"
+                            id="quantidade_input_{{ sorteio.pk }}"
+                            class="form-control"
+                            min="0"
+                            max="4"
+                            value="{{ sorteio.interesse_do_user.quantidade|default:0 }}">
+                    </div>
+                    <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-primary"
+                            onclick="salvarInteresse({{ sorteio.pk }})">
+                        Salvar Interesse
+                    </button>
+                    </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        Nenhum sorteio cadastrado no momento.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+
+    function abrirModalInteresse(sorteioId) {
+        var modalEl = document.getElementById('modalInteresse' + sorteioId);
+        var modalInstance = new bootstrap.Modal(modalEl);
+        modalInstance.show();
+    }
+    
+  function salvarInteresse(sorteioId) {
+    var quantidade = $('#quantidade_input_' + sorteioId).val();
+    $.ajax({
+      url: "{% url 'jogo:interesse-save' %}",
+      type: "POST",
+      data: {
+        'csrfmiddlewaretoken': '{{ csrf_token }}',
+        'sorteio': sorteioId,
+        'quantidade': quantidade
+      },
+      success: function(data) {
+        if (data.success) {
+          var modalEl = document.getElementById('modalInteresse' + sorteioId);
+          var modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+          modalInstance.hide();
+
+          $('#quantidade-exibida-' + sorteioId).text('Meus jogos: ' + data.quantidade);
+          $('#total-pedidos-' + sorteioId).text('Total de pedidos: ' + data.total_pedidos + ' jogos');
+        } else {
+          alert("Erro: " + JSON.stringify(data.errors));
+        }
+      },
+      error: function() {
+        alert("Erro de conexão.");
+      }
+    });
+  }
+</script>
+
+{% endblock %}

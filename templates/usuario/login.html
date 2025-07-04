@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="pt-br">
+  <head>
+    {% include 'base/cabecalho.html' %}
+  </head>
+  <body>
+    <div class="container-scroller">
+      <div class="container-fluid page-body-wrapper full-page-wrapper">
+        <div class="content-wrapper d-flex align-items-center auth">
+          <div class="row flex-grow">
+            <div class="col-lg-4 mx-auto">
+              <div class="auth-form-light text-center p-5">
+                <div class="brand-logo">
+                  <img src="{% static 'assets/images/logo.png' %}" style="width: 100%;">
+                </div>
+                <h4>Faça o login</h4>
+
+
+
+                <form class="pt-3" method="post">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="form-group">
+                        <input
+                            type="text"
+                            class="form-control form-control-lg"
+                            id="{{ form.username.id_for_label }}"
+                            placeholder="Nome de usuário"
+                            name="{{ form.username.name }}"
+                            value="{{ form.username.value|default_if_none:'' }}"
+                            {% if form.username.field.required %}required{% endif %}
+                            {% for name, value in form.username.field.widget.attrs.items %}{{ name }}="{{ value }}"{% endfor %}
+                        >
+                        {% if form.username.errors %}
+                            <div class="text-danger">
+                                {% for error in form.username.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <input
+                            type="password"
+                            class="form-control form-control-lg"
+                            id="{{ form.password.id_for_label }}"
+                            placeholder="Senha"
+                            name="{{ form.password.name }}"
+                            {% if form.password.field.required %}required{% endif %}
+                            {% for name, value in form.password.field.widget.attrs.items %}{{ name }}="{{ value }}"{% endfor %}
+                        >
+                        {% if form.password.errors %}
+                            <div class="text-danger">
+                                {% for error in form.password.errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-3 d-grid gap-2">
+                        <button type="submit" class="btn btn-block btn-gradient-primary btn-lg font-weight-medium auth-form-btn">Login</button>
+                    </div>
+
+                    <div class="my-2 d-flex justify-content-between align-items-center">
+                        <div class="form-check">
+                            <label class="form-check-label text-muted">
+                                {{ form.remember_me }}
+                                {{ form.remember_me.label }}
+                            </label>
+                            {% if form.remember_me.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.remember_me.errors %}<p>{{ error }}</p>{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <a href="#" class="auth-link text-primary">Esqueceu a senha?</a>
+                    </div>
+
+                    <div class="text-center mt-4 font-weight-light">
+                        Não tem conta? <a href="{% url 'usuario:cadastrar' %}" class="text-primary">Cadastre-se aqui</a>
+                    </div>
+                </form>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- content-wrapper ends -->
+      </div>
+      <!-- page-body-wrapper ends -->
+    </div>
+    {% include 'base/scripts.html' %}
+  </body>
+</html>

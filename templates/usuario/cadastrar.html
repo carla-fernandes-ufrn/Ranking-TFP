@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+{% load static %}
+{% load widget_tweaks %}
+<html lang="pt-br">
+  <head>
+    {% include 'base/cabecalho.html' %}
+  </head>
+  <body>
+    <div class="container-scroller">
+      <div class="container-fluid page-body-wrapper full-page-wrapper">
+        <div class="content-wrapper d-flex align-items-center auth">
+          <div class="row flex-grow">
+            <div class="col-lg-4 mx-auto">
+              <div class="auth-form-light p-5">
+                <div class="brand-logo">
+                  <img src="{% static 'assets/images/logo.png' %}" style="width: 100%;">
+                </div>
+                <h4 class="text-center">Cadastre-se</h4>
+                <h6 class="font-weight-light text-center">O seu cadastro precisa ser confirmado pela organização da TFP</h6>
+
+                <form method="post" class="pt-3 form-sample">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label>{{ field.label }}</label>
+                            {% if field.errors %}
+                            {% render_field field class="form-control is-invalid" %}
+                            {% else %}
+                            {% render_field field class="form-control" %}
+                            {% endif %}
+                            {% for error in field.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="mt-3 d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg font-weight-medium auth-form-btn">
+                            CADASTRAR
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-4 font-weight-light">
+                        Já tem uma conta? <a href="{% url 'usuario:login' %}" class="text-primary">Login</a>
+                    </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- content-wrapper ends -->
+      </div>
+      <!-- page-body-wrapper ends -->
+    </div>
+
+    {% include 'base/scripts.html' %}
+    <script>
+        $(document).ready(function(){
+            // Aplica a máscara ao campo de telefone
+            $('#id_telefone').mask('(00) 00000-0000'); // Máscara para celular (com 9 dígitos)
+
+            // Se precisar de uma máscara que se ajuste a 8 ou 9 dígitos (para fixo/celular):
+            var SPMaskBehavior = function (val) {
+                return val.replace(/\D/g, '').length === 11 ? '(00) 00000-0000' : '(00) 0000-00009';
+            },
+            spOptions = {
+                onKeyPress: function(val, e, field, options) {
+                    field.mask(SPMaskBehavior.apply({}, arguments), options);
+                }
+            };
+            $('#id_telefone').mask(SPMaskBehavior, spOptions);
+        });
+    </script>
+  </body>
+</html>

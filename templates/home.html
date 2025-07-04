@@ -1,0 +1,481 @@
+{% extends 'base/base.html' %}
+
+{% load duration_extras %}
+
+{% block conteudo %}
+<div class="container">
+  <div class="row">
+    <!-- 👉 Card do Sorteio -->
+    <div class="col-12 col-md-4 mb-4">
+      <div class="card border border-secondary">
+        <div class="card-body d-flex flex-column">
+          <div class="clearfix mb-2">
+            <a href="{% url 'jogo:sorteio-detail' sorteio.pk %}">
+              <h4 class="card-title float-start">{{ sorteio.mes }}/{{ sorteio.ano }}</h4>
+            </a>
+            <div class="float-end">
+              {% if sorteio.status == 'I' %}
+                <label class="badge bg-info text-white">Indicação</label>
+              {% elif sorteio.status == 'S' %}
+                <label class="badge bg-success text-white">Sorteado</label>
+              {% endif %}
+            </div>
+          </div>
+
+          <p>Meus jogos: {{ sorteio.interesse_do_user.quantidade|default:'-' }}</p>
+          {% if sorteio.status == 'I' %}
+            <p>Total de pedidos: {{ sorteio.total_pedidos }} jogos</p>
+          {% else %}
+            <p>Total de partidas: {{ sorteio.partidas.count }} jogos</p>
+          {% endif %}
+
+          <div class="progress mb-3" style="height: 20px;">
+            <div class="progress-bar bg-success"
+              role="progressbar"
+              style="width: {{ sorteio.progresso }}%;"
+              aria-valuenow="{{ sorteio.progresso }}"
+              aria-valuemin="0"
+              aria-valuemax="100">
+              {{ sorteio.progresso }}%
+            </div>
+          </div>
+
+          <div class="mt-auto">
+            {% if sorteio.status == 'I' %}
+              <button type="button" class="btn btn-outline-success btn-sm">
+                Adicionar Interesse
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 👉 Lista de partidas -->
+    <div class="col-12 col-md-8">
+      <div class="row">
+        {% for partida in partidas %}
+          <div class="col-12 col-md-3 mb-3">
+            <div class="card border border-{{ partida.cor_status }} shadow-sm">
+              <div class="card-body p-2">
+                <p class="card-title mb-1">
+                    <span style="font-size: 0.8rem;">
+                        {% if partida.vencedor == partida.jogador1 %}
+                        <strong>{{ partida.jogador1 }}</strong> X {{ partida.jogador2 }}
+                        {% elif partida.vencedor == partida.jogador2 %}
+                        {{ partida.jogador1 }} X <strong>{{ partida.jogador2 }}</strong>
+                        {% else %}
+                        {{ partida.jogador1 }} X {{ partida.jogador2 }}
+                        {% endif %}
+                    </span>
+                </p>
+
+                <span class="mb-1 small">
+                  {% if partida.data %}
+                    {{ partida.data|date:"d/m/Y H:i" }}
+                    {% if partida.duracao %}
+                      - {{partida.duracao|duracao_horas_minutos}}
+                    {% endif %}
+                    <br>
+                  {% endif %}
+                  {% if partida.local %}
+                    {{ partida.local.nome }}<br>
+                  {% endif %}
+                  {% if partida.placar %}
+                    <p class="mb-1 small">
+                        | 
+                        {% if partida.placar.set1jogador1 > partida.placar.set1jogador2 %}
+                            <strong>{{ partida.placar.set1jogador1 }}</strong> x {{ partida.placar.set1jogador2 }}
+                        {% elif partida.placar.set1jogador2 > partida.placar.set1jogador1 %}
+                            {{ partida.placar.set1jogador1 }} x <strong>{{ partida.placar.set1jogador2 }}</strong>
+                        {% endif %}
+
+                        {% if partida.placar.tiebreak1jogador1 %}
+                            (
+                            {% if partida.placar.tiebreak1jogador1 > partida.placar.tiebreak1jogador2 %}
+                                <strong>{{ partida.placar.tiebreak1jogador1 }}</strong> x {{ partida.placar.tiebreak1jogador2 }}
+                            {% elif partida.placar.tiebreak1jogador2 > partida.placar.tiebreak1jogador1 %}
+                                {{ partida.placar.tiebreak1jogador1 }} x <strong>{{ partida.placar.tiebreak1jogador2 }}</strong>
+                            {% endif %}
+                            )
+                        {% endif %}
+                         | 
+                        {% if partida.placar.set2jogador1 > partida.placar.set2jogador2 %}
+                            <strong>{{ partida.placar.set2jogador1 }}</strong> x {{ partida.placar.set2jogador2 }}
+                        {% elif partida.placar.set2jogador2 > partida.placar.set2jogador1 %}
+                            {{ partida.placar.set2jogador1 }} x <strong>{{ partida.placar.set2jogador2 }}</strong>
+                        {% endif %}
+
+                        {% if partida.placar.tiebreak2jogador1 %}
+                            (
+                            {% if partida.placar.tiebreak2jogador1 > partida.placar.tiebreak2jogador2 %}
+                                <strong>{{ partida.placar.tiebreak2jogador1 }}</strong> x {{ partida.placar.tiebreak2jogador2 }}
+                            {% elif partida.placar.tiebreak2jogador2 > partida.placar.tiebreak2jogador1 %}
+                                {{ partida.placar.tiebreak2jogador1 }} x <strong>{{ partida.placar.tiebreak2jogador2 }}</strong>
+                            {% endif %}
+                            )
+                        {% endif %}
+                         | 
+                        {% if partida.placar.supertiejogador1 %}
+                            {% if partida.placar.supertiejogador1 > partida.placar.supertiejogador2 %}
+                                <strong>{{ partida.placar.supertiejogador1 }}</strong> x {{ partida.placar.supertiejogador2 }}
+                            {% elif partida.placar.supertiejogador2 > partida.placar.supertiejogador1 %}
+                                {{ partida.placar.supertiejogador1 }} x <strong>{{ partida.placar.supertiejogador2 }}</strong>
+                            {% endif %}
+                             |
+                        {% endif %}
+                    </p>
+
+                  {% endif %}
+                </span>
+                <button class="badge bg-primary border-0"
+                    onclick="abrirPartida({{ partida.pk }}, '{{partida.jogador1}}', '{{partida.jogador2}}')"
+                    title="Marcar/Cancelar">
+                    Marcar/Cancelar
+                </button>
+                <button class="badge bg-success border-0 float-end"
+                    onclick="abrirPlacar({{ partida.pk }}, '{{partida.jogador1}}', '{{partida.jogador2}}')"
+                    title="Editar placar">
+                    Placar
+                </button>
+                <!-- <span class="badge bg-{{ partida.cor_status }} small">
+                  {% if partida.status == 'S' %}Sorteado{% elif partida.status == 'M' %}Marcado{% elif partida.status == 'R' %}Realizado{% else %}Não-Realizado{% endif %}
+                </span> -->
+              </div>
+            </div>
+          </div>
+        {% empty %}
+            <span class="small">Nenhuma partida encontrada.</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 👉 Modal Placar Melhorado -->
+<div class="modal fade" id="modalPlacar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="placarForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Placar</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% csrf_token %}
+          <input type="hidden" id="partidaId" name="partida_id">
+
+          <!-- Bloco geral de erros -->
+          <div id="placar-errors"></div>
+
+          <!-- Jogadores -->
+          <div class="mb-2">
+            <span class="small" id="jogadoresLabel"></span>
+          </div>
+
+          <!-- Duração -->
+          <div class="row mb-2">
+            <div class="col">
+              <label class="form-label small">Duração Horas</label>
+              <input type="number" name="duracao_horas" id="duracao_horas" class="form-control" min="0">
+            </div>
+            <div class="col">
+              <label class="form-label small">Duração Minutos</label>
+              <input type="number" name="duracao_minutos" id="duracao_minutos" class="form-control" min="0" max="59">
+            </div>
+          </div>
+
+          <!-- SET 1 -->
+          <div class="row mb-2">
+            <div class="col">
+              <label class="form-label small">Set 1 J1</label>
+              <input type="number" class="form-control placar-input" name="set1jogador1" id="set1j1" min="0" max="7">
+              <div class="text-danger small" id="error-set1jogador1"></div>
+            </div>
+            <div class="col">
+              <label class="form-label small">Set 1 J2</label>
+              <input type="number" class="form-control placar-input" name="set1jogador2" id="set1j2" min="0" max="7">
+              <div class="text-danger small" id="error-set1jogador2"></div>
+            </div>
+          </div>
+
+          <!-- Tiebreak 1 -->
+          <div class="row mb-2" id="tb1Row">
+            <div class="col">
+              <label class="form-label small">Tiebreak 1 J1</label>
+              <input type="number" class="form-control" name="tiebreak1jogador1" id="tb1j1" min="0" max="7">
+              <div class="text-danger small" id="error-tiebreak1jogador1"></div>
+            </div>
+            <div class="col">
+              <label class="form-label small">Tiebreak 1 J2</label>
+              <input type="number" class="form-control" name="tiebreak1jogador2" id="tb1j2" min="0" max="7">
+              <div class="text-danger small" id="error-tiebreak1jogador2"></div>
+            </div>
+          </div>
+
+          <!-- SET 2 -->
+          <div class="row mb-2">
+            <div class="col">
+              <label class="form-label small">Set 2 J1</label>
+              <input type="number" class="form-control placar-input" name="set2jogador1" id="set2j1" min="0" max="7">
+              <div class="text-danger small" id="error-set2jogador1"></div>
+            </div>
+            <div class="col">
+              <label class="form-label small">Set 2 J2</label>
+              <input type="number" class="form-control placar-input" name="set2jogador2" id="set2j2" min="0" max="7">
+              <div class="text-danger small" id="error-set2jogador2"></div>
+            </div>
+          </div>
+
+          <!-- Tiebreak 2 -->
+          <div class="row mb-2" id="tb2Row">
+            <div class="col">
+              <label class="form-label small">Tiebreak 2 J1</label>
+              <input type="number" class="form-control" name="tiebreak2jogador1" id="tb2j1" min="0" max="7">
+              <div class="text-danger small" id="error-tiebreak2jogador1"></div>
+            </div>
+            <div class="col">
+              <label class="form-label small">Tiebreak 2 J2</label>
+              <input type="number" class="form-control" name="tiebreak2jogador2" id="tb2j2" min="0" max="7">
+              <div class="text-danger small" id="error-tiebreak2jogador2"></div>
+            </div>
+          </div>
+
+          <!-- Supertie -->
+          <div class="row mb-2" id="superRow">
+            <div class="col">
+              <label class="form-label small">Supertie J1</label>
+              <input type="number" class="form-control" name="supertiejogador1" id="superj1" min="0">
+              <div class="text-danger small" id="error-supertiejogador1"></div>
+            </div>
+            <div class="col">
+              <label class="form-label small">Supertie J2</label>
+              <input type="number" class="form-control" name="supertiejogador2" id="superj2" min="0">
+              <div class="text-danger small" id="error-supertiejogador2"></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" onclick="salvarPlacar()">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 👉 Modal MARCAR/CANCELAR -->
+<div class="modal fade" id="modalPartida" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="partidaForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Marcar/Cancelar Partida</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% csrf_token %}
+          <input type="hidden" id="partidaIdPartida" name="partida_id">
+
+          <!-- Erros gerais -->
+          <div id="partida-errors"></div>
+
+          <!-- Jogadores -->
+          <div class="mb-2">
+            <span class="small" id="jogadoresPartidaLabel"></span>
+          </div>
+
+          <!-- Local -->
+          <div class="mb-2">
+            <label class="form-label small">Local</label>
+            <select id="localSelect" name="local" class="form-control"></select>
+            <div class="text-danger small" id="error-local"></div>
+          </div>
+
+          <!-- Data/Hora -->
+          <div class="mb-2">
+            <label class="form-label small">Data/Hora</label>
+            <input type="datetime-local" name="data" id="dataPartida" class="form-control">
+            <div class="text-danger small" id="error-data"></div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" onclick="cancelarPartida()">Cancelar Partida</button>
+          <button type="button" class="btn btn-primary" onclick="salvarPartida()">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function salvarPlacar() {
+    const partidaId = $('#partidaId').val();
+    const url = "{% url 'jogo:placar-save' 0 %}".replace('0', partidaId);
+
+    console.log("Enviando para:", url);
+
+    $.ajax({
+      url: url,
+      type: "POST",
+      data: $('#placarForm').serialize(),
+      success: function(data) {
+        // Limpa blocos de erro
+        $('#placar-errors').html('');
+        $('.text-danger').html('');
+
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('modalPlacar')).hide();
+          location.reload();
+        } else {
+          // __all__ erros gerais
+          if (data.errors['__all__']) {
+            $('#placar-errors').append(
+              `<div class="alert alert-danger small mb-2">${data.errors['__all__'].join('<br>')}</div>`
+            );
+          }
+
+          // Campos específicos
+          for (const [field, messages] of Object.entries(data.errors)) {
+            if (field === '__all__') continue;
+            $(`#error-${field}`).html(messages.join('<br>'));
+          }
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error("Falha:", error);
+        alert("Erro inesperado.");
+      }
+    });
+  }
+
+  function abrirPlacar(partidaId, nome1, nome2) {
+    $('#partidaId').val(partidaId);
+    $('#jogadoresLabel').text(`${nome1} X ${nome2}`);
+
+    // Limpa valores
+    ['set1j1','set1j2','tb1j1','tb1j2','set2j1','set2j2','tb2j1','tb2j2','superj1','superj2'].forEach(id => $('#' + id).val(''));
+
+    // Limpa erros
+    $('#placar-errors').html('');
+    $('.text-danger').html('');
+
+    $.get(`placar/get/${partidaId}/`, function(data) {
+      if (data.duracao_minutos) $('#duracao_minutos').val(data.duracao_minutos);
+      if (data.duracao_horas) $('#duracao_horas').val(data.duracao_horas);
+      if (data.set1jogador1) $('#set1j1').val(data.set1jogador1);
+      if (data.set1jogador2) $('#set1j2').val(data.set1jogador2);
+      if (data.set2jogador1) $('#set2j1').val(data.set2jogador1);
+      if (data.set2jogador2) $('#set2j2').val(data.set2jogador2);
+      if (data.tiebreak1jogador1) $('#tb1j1').val(data.tiebreak1jogador1);
+      if (data.tiebreak1jogador2) $('#tb1j2').val(data.tiebreak1jogador2);
+      if (data.tiebreak2jogador1) $('#tb2j1').val(data.tiebreak2jogador1);
+      if (data.tiebreak2jogador2) $('#tb2j2').val(data.tiebreak2jogador2);
+      if (data.supertiejogador1) $('#superj1').val(data.supertiejogador1);
+      if (data.supertiejogador2) $('#superj2').val(data.supertiejogador2);
+    });
+
+    var myModal = new bootstrap.Modal(document.getElementById('modalPlacar'));
+    myModal.show();
+  }
+
+  function abrirPartida(partidaId, nome1, nome2) {
+  $('#partidaIdPartida').val(partidaId);
+    $('#jogadoresPartidaLabel').text(`${nome1} X ${nome2}`);
+
+  // Limpa erros
+  $('#partida-errors').html('');
+  $('.text-danger').html('');
+
+  // Limpa campos
+  $('#dataPartida').val('');
+  $('#localSelect').empty();
+
+  // Carrega dados atuais da Partida
+  $.get(`partida/get/${partidaId}/`, function(data) {
+    if (data.local_id) {
+      $('#localSelect').append(
+        `<option value="${data.local_id}" selected>${data.local_nome}</option>`
+      );
+    }
+
+    if (data.data) {
+      console.log("Data ISO recebida:", data.data);
+
+      // Garante formato: yyyy-MM-ddTHH:mm
+      const dt = new Date(data.data);
+
+      const year = dt.getFullYear();
+      const month = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      const hours = String(dt.getHours()).padStart(2, '0');
+      const minutes = String(dt.getMinutes()).padStart(2, '0');
+
+      const formatted = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+      console.log("Formatado para input:", formatted);
+
+      $('#dataPartida').val(formatted);
+    }
+
+    // Opcional: Carregar lista de Locais
+    $.get('partida/locais/', function(locais) {
+      locais.forEach(function(local) {
+        if (local.id != data.local_id) {
+          $('#localSelect').append(`<option value="${local.id}">${local.nome}</option>`);
+        }
+      });
+    });
+  });
+
+  var myModal = new bootstrap.Modal(document.getElementById('modalPartida'));
+  myModal.show();
+}
+
+function salvarPartida() {
+  const partidaId = $('#partidaIdPartida').val();
+  $.ajax({
+    url: `partida/save/${partidaId}/`,
+    type: "POST",
+    data: $('#partidaForm').serialize(),
+    success: function(data) {
+      $('#partida-errors').html('');
+      $('.text-danger').html('');
+
+      if (data.success) {
+        bootstrap.Modal.getInstance(document.getElementById('modalPartida')).hide();
+        location.reload();
+      } else {
+        if (data.errors['__all__']) {
+          $('#partida-errors').html(`<div class="alert alert-danger">${data.errors['__all__'].join('<br>')}</div>`);
+        }
+        for (const [field, messages] of Object.entries(data.errors)) {
+          if (field === '__all__') continue;
+          $(`#error-${field}`).html(messages.join('<br>'));
+        }
+      }
+    },
+    error: function() {
+      alert('Erro inesperado.');
+    }
+  });
+}
+
+function cancelarPartida() {
+  const partidaId = $('#partidaIdPartida').val();
+  $.post(`partida/cancelar/${partidaId}/`, {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function(data) {
+    if (data.success) {
+      bootstrap.Modal.getInstance(document.getElementById('modalPartida')).hide();
+      location.reload();
+    } else {
+      alert("Erro ao cancelar.");
+    }
+  });
+}
+
+</script>
+
+
+
+{% endblock %}

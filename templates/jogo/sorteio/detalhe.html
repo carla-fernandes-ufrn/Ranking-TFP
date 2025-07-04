@@ -1,0 +1,184 @@
+{% extends 'base/base.html' %}
+
+{% block conteudo %}
+<div class="card">
+  <div class="card-body">
+    <h4 class="card-title d-flex justify-content-between align-items-center">
+      Sorteio {{ sorteio.mes }}/{{ sorteio.ano }}
+      {% if sorteio.status == 'I' %}
+        <span class="badge bg-info">Indicação</span>
+      {% elif sorteio.status == 'S' %}
+        <button class="btn btn-link p-0 ms-2"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapseFiltro"
+                aria-expanded="false"
+                aria-controls="collapseFiltro"
+                title="Filtrar">
+          <i class="fa fa-search"></i>
+        </button>
+        <span class="badge bg-success">Sorteado</span>
+      {% endif %}
+    </h4>
+
+    {% if sorteio.status == 'S' %}
+
+      <!-- COLLAPSE FILTRO -->
+      <div class="collapse mb-4" id="collapseFiltro">
+          <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <input type="text" name="nome" class="form-control" placeholder="Jogadora" value="{{ request.GET.nome }}">
+            </div>
+            <div class="col-md-2">
+              <input type="date" name="data" class="form-control" value="{{ request.GET.data }}">
+            </div>
+            <div class="col-md-3">
+              <input type="text" name="local" class="form-control" placeholder="Local" value="{{ request.GET.local }}">
+            </div>
+            <div class="col-12 col-md-6 col-lg-4">
+                <label class="form-label d-block mb-1 small">Status:</label>
+                <div class="btn-group d-flex flex-wrap" role="group">
+                    <input type="hidden" name="status" id="status-input" value="{{ request.GET.status }}">
+                    <button type="button" class="btn btn-outline-secondary btn-sm {% if request.GET.status == '' %}active{% endif %}" onclick="setStatus('')">Todos</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm {% if request.GET.status == 'S' %}active{% endif %}" onclick="setStatus('S')">Sorteado</button>
+                    <button type="button" class="btn btn-outline-warning btn-sm {% if request.GET.status == 'M' %}active{% endif %}" onclick="setStatus('M')">Marcado</button>
+                    <button type="button" class="btn btn-outline-success btn-sm {% if request.GET.status == 'R' %}active{% endif %}" onclick="setStatus('R')">Realizado</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm {% if request.GET.status == 'N' %}active{% endif %}" onclick="setStatus('N')">Não-Realizado</button>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex">
+              <button type="submit" class="btn btn-primary flex-fill">Filtrar</button>
+            </div>
+          </form>
+      </div>
+
+      <!-- CARDS COMPACTOS -->
+      <div class="row">
+        {% for partida in partidas %}
+          <div class="col-12 col-md-3 mb-3">
+            <div class="card border border-{{ partida.cor_status }} shadow-sm">
+              <div class="card-body p-2">
+                <p class="card-title mb-1">
+                    <span style="font-size: 0.8rem;">
+                        {% if partida.vencedor == partida.jogador1 %}
+                        <strong>{{ partida.jogador1 }}</strong> X {{ partida.jogador2 }}
+                        {% elif partida.vencedor == partida.jogador2 %}
+                        {{ partida.jogador1 }} X <strong>{{ partida.jogador2 }}</strong>
+                        {% else %}
+                        {{ partida.jogador1 }} X {{ partida.jogador2 }}
+                        {% endif %}
+                    </span>
+                </p>
+
+                <p class="mb-1 small">
+                  {% if partida.data %}
+                    {{ partida.data|date:"d/m/Y H:i" }}<br>
+                  {% endif %}
+                  {% if partida.local %}
+                    {{ partida.local.nome }}<br>
+                  {% endif %}
+                  {% if partida.placar %}
+                    <p class="mb-1 small">
+                        |
+                        {% if partida.placar.set1jogador1 > partida.placar.set1jogador2 %}
+                            <strong>{{ partida.placar.set1jogador1 }}</strong> x {{ partida.placar.set1jogador2 }}
+                        {% elif partida.placar.set1jogador2 > partida.placar.set1jogador1 %}
+                            {{ partida.placar.set1jogador1 }} x <strong>{{ partida.placar.set1jogador2 }}</strong>
+                        {% endif %}
+
+                        {% if partida.placar.tiebreak1jogador1 %}
+                            (
+                            {% if partida.placar.tiebreak1jogador1 > partida.placar.tiebreak1jogador2 %}
+                                <strong>{{ partida.placar.tiebreak1jogador1 }}</strong> x {{ partida.placar.tiebreak1jogador2 }}
+                            {% elif partida.placar.tiebreak1jogador2 > partida.placar.tiebreak1jogador1 %}
+                                {{ partida.placar.tiebreak1jogador1 }} x <strong>{{ partida.placar.tiebreak1jogador2 }}</strong>
+                            {% endif %}
+                            )
+                        {% endif %}
+                         | 
+                        {% if partida.placar.set2jogador1 > partida.placar.set2jogador2 %}
+                            <strong>{{ partida.placar.set2jogador1 }}</strong> x {{ partida.placar.set2jogador2 }}
+                        {% elif partida.placar.set2jogador2 > partida.placar.set2jogador1 %}
+                            {{ partida.placar.set2jogador1 }} x <strong>{{ partida.placar.set2jogador2 }}</strong>
+                        {% endif %}
+
+                        {% if partida.placar.tiebreak2jogador1 %}
+                            (
+                            {% if partida.placar.tiebreak2jogador1 > partida.placar.tiebreak2jogador2 %}
+                                <strong>{{ partida.placar.tiebreak2jogador1 }}</strong> x {{ partida.placar.tiebreak2jogador2 }}
+                            {% elif partida.placar.tiebreak2jogador2 > partida.placar.tiebreak2jogador1 %}
+                                {{ partida.placar.tiebreak2jogador1 }} x <strong>{{ partida.placar.tiebreak2jogador2 }}</strong>
+                            {% endif %}
+                            )
+                        {% endif %}
+                         | 
+                        {% if partida.placar.supertiejogador1 %}
+                            {% if partida.placar.supertiejogador1 > partida.placar.supertiejogador2 %}
+                                <strong>{{ partida.placar.supertiejogador1 }}</strong> x {{ partida.placar.supertiejogador2 }}
+                            {% elif partida.placar.supertiejogador2 > partida.placar.supertiejogador1 %}
+                                {{ partida.placar.supertiejogador1 }} x <strong>{{ partida.placar.supertiejogador2 }}</strong>
+                            {% endif %}
+                            |
+                        {% endif %}
+                    </p>
+
+                  {% endif %}
+                </p>
+                <span class="badge bg-{{ partida.cor_status }} small">
+                  {% if partida.status == 'S' %}Sorteado{% elif partida.status == 'M' %}Marcado{% elif partida.status == 'R' %}Realizado{% else %}Não-Realizado{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+            <span class="small">Nenhuma partida encontrada.</span>
+        {% endfor %}
+      </div>
+
+    {% elif sorteio.status == 'I' %}
+      {% if user.is_superuser %}
+        <div>
+          <a class="btn btn-primary w-100 w-md-50 w-lg-30" href="{% url 'jogo:sortear' pk=sorteio.pk %}">Sortear</a>
+        </div>
+        <br>
+      {% endif %}
+      <!-- TABELA INTERESSES -->
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead class="table-light">
+            <tr>
+              <th>Nome</th>
+              <th>Quantidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in interesses %}
+              <tr>
+                <td>{{ item.usuario }}</td>
+                <td>{{ item.quantidade }}</td>
+              </tr>
+            {% empty %}
+              <span class="small">Nenhum interesse encontrado.</span>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  function setStatus(status) {
+    // Atualiza o valor do input hidden
+    document.getElementById('status-input').value = status;
+
+    // Remove 'active' de todos os botões
+    const buttons = document.querySelectorAll('.btn-group button');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    // Adiciona 'active' no botão clicado
+    event.target.classList.add('active');
+  }
+</script>
+
+{% endblock %}
