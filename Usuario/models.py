@@ -9,7 +9,7 @@ STATUS = [
 
 class Usuario(AbstractUser):
     telefone = models.CharField(max_length=20, verbose_name="Telefone")
-    data_nascimento = models.DateField(verbose_name="Data de Nascimento")
+    data_nascimento = models.DateField(blank=True, null=True, verbose_name="Data de Nascimento")
     endereco = models.TextField(blank=True, null=True, verbose_name="Endereço")
     status = models.CharField(max_length=1, choices=STATUS, default='E', verbose_name="Status")
 
