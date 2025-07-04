@@ -34,7 +34,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['ranking-tfp.onrender.com']
+ALLOWED_HOSTS = ['ranking-tfp-exyy.onrender.com']
 
 
 # Application definition
