@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+echo "====== MIGRATIONS ======"
+ls Usuario/migrations
+
 # Roda as migrações
 python manage.py migrate
 
