@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
+set -ex
 
-echo "====== MIGRATIONS ======"
-ls Usuario/migrations
-
-# Roda as migrações
+echo "== MIGRATE START =="
 python manage.py migrate
+echo "== MIGRATE DONE =="
 
 # Cria o superuser se não existir
 echo "from django.contrib.auth import get_user_model; \
