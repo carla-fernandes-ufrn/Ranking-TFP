@@ -13,6 +13,8 @@ from django.urls import reverse_lazy
 from django.db.models import Q
 from django.utils.timezone import localtime
 
+from django.contrib.auth.models import User
+
 from django.contrib.auth.decorators import user_passes_test
         
 import random
@@ -36,7 +38,7 @@ class HomeView(View):
         ano_atual = today.year
 
         # Usuário logado
-        usuario = Usuario.objects.get(pk=request.user.pk)
+        usuario = User.objects.get(pk=request.user.pk)
 
         # Sorteio do mês atual
         sorteio = Sorteio.objects.filter(mes=mes_atual, ano=ano_atual).first()
@@ -93,7 +95,7 @@ class SorteioListView(ListView):
             sorteio.total_partidas = total
             sorteio.total_pedidos = total_pedidos
 
-            usuario = Usuario.objects.get(pk=self.request.user.pk)
+            usuario = User.objects.get(pk=self.request.user.pk)
 
             interesse = InteresseJogo.objects.filter(
                 jogador=self.request.user,
@@ -179,7 +181,7 @@ class SorteioDetailView(DetailView):
             context['partidas'] = partidas
 
         elif sorteio.status == 'I':  # Se indicação → interesses
-            usuarios = Usuario.objects.order_by('first_name', 'last_name')
+            usuarios = User.objects.order_by('first_name', 'last_name')
             lista = []
 
             for user in usuarios:
@@ -220,7 +222,7 @@ def interesse_salvar(request):
     sorteio_id = request.POST.get('sorteio')
     sorteio = get_object_or_404(Sorteio, pk=sorteio_id)
 
-    usuario = Usuario.objects.get(pk=request.user.pk)
+    usuario = User.objects.get(pk=request.user.pk)
 
     interesse, created = InteresseJogo.objects.get_or_create(
         jogador=usuario,

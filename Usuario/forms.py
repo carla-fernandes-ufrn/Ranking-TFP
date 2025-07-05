@@ -3,10 +3,10 @@ from django.contrib.auth import forms as auth_forms
 from django.contrib.auth.models import User
 from .models import Usuario
 
-class CriarUsuarioForm(auth_forms.UserCreationForm):
+class CriarUserForm(auth_forms.UserCreationForm):
     class Meta:
-        fields = ('username', 'email', 'password1', 'password2', 'first_name', 'last_name', 'data_nascimento', 'telefone', 'endereco')
-        model = Usuario
+        fields = ('username', 'email', 'password1', 'password2', 'first_name', 'last_name')
+        model = User
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

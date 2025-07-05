@@ -1,6 +1,8 @@
 from django import forms
 from datetime import timedelta
 
+from django.contrib.auth.models import User
+
 from .models import Sorteio, InteresseJogo, Placar
 
 class SorteioForm(forms.ModelForm):

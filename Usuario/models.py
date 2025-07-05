@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User, AbstractUser
+from django.contrib.auth.models import User
 from django.db import models
 
 STATUS = [
@@ -7,16 +7,17 @@ STATUS = [
     ('I', 'Inativo'),
 ]
 
-class Usuario(AbstractUser):
-    telefone = models.CharField(max_length=20, verbose_name="Telefone")
-    data_nascimento = models.DateField(blank=True, null=True, verbose_name="Data de Nascimento")
+class Usuario(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    telefone = models.CharField(null=True, blank=True, max_length=20, verbose_name="Telefone")
+    data_nascimento = models.DateField(null=True, blank=True, verbose_name="Data de Nascimento")
     endereco = models.TextField(blank=True, null=True, verbose_name="Endereço")
     status = models.CharField(max_length=1, choices=STATUS, default='E', verbose_name="Status")
 
     class Meta:
-        ordering = ['first_name', 'last_name']
+        ordering = ['user__first_name', 'user__last_name']
         verbose_name = "Usuário"
         verbose_name_plural = "Usuários"
 
     def __str__(self):
-        return self.first_name + " " + self.last_name
+        return self.user.first_name + " " + self.user.last_name

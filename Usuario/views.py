@@ -1,19 +1,24 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
 from django.views.generic import CreateView
 from django.urls import reverse_lazy
 from django.db import transaction
 
-from .forms import CriarUsuarioForm
+from .forms import CriarUserForm
 from .models import Usuario
 
 class Cadastrar(CreateView):
-    model = Usuario
+    model = User
     template_name = 'usuario/cadastrar.html'
     success_url = reverse_lazy('usuario:login')
-    form_class = CriarUsuarioForm
+    form_class = CriarUserForm
 
     def form_valid(self, form):
-        form.save()
+        user = form.save()
+        Usuario.objects.create(
+            user=user
+        )
+        
         return super().form_valid(form)
 
     def form_invalid(self, form):

@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from django.contrib.auth.models import User
 from Usuario.models import Usuario
 
 SORTEIO = [
@@ -57,8 +58,8 @@ STATUS = [
 ]
 
 class Partida(models.Model):
-    jogador1 = models.ForeignKey(Usuario, on_delete=models.RESTRICT,verbose_name="Jogador 1", related_name="partidas_j1")
-    jogador2 = models.ForeignKey(Usuario, on_delete=models.RESTRICT,verbose_name="Jogador 2", related_name="partidas_j2")
+    jogador1 = models.ForeignKey(User, on_delete=models.RESTRICT,verbose_name="Jogador 1", related_name="partidas_j1")
+    jogador2 = models.ForeignKey(User, on_delete=models.RESTRICT,verbose_name="Jogador 2", related_name="partidas_j2")
     sorteio = models.ForeignKey(Sorteio, null=True, blank=True, on_delete=models.RESTRICT,verbose_name="Sorteio", related_name="partidas")
     data = models.DateTimeField(null=True, blank=True, verbose_name="Data e hora")
     local = models.ForeignKey(Local, null=True, blank=True, on_delete=models.RESTRICT,verbose_name="Local", related_name="partidas")
@@ -87,7 +88,7 @@ class Partida(models.Model):
         verbose_name_plural = "Partidas"
 
 class InteresseJogo(models.Model):
-    jogador = models.ForeignKey(Usuario, on_delete=models.RESTRICT,verbose_name="Jogador", related_name="interesses_jogo")
+    jogador = models.ForeignKey(User, on_delete=models.RESTRICT,verbose_name="Jogador", related_name="interesses_jogo")
     sorteio = models.ForeignKey(Sorteio, null=True, blank=True, on_delete=models.RESTRICT,verbose_name="Sorteio", related_name="interesses_jogo")
     quantidade = models.PositiveBigIntegerField(null=True, blank=True, validators=[MinValueValidator(0),MaxValueValidator(4)],verbose_name="Quantidade de jogos")
 
