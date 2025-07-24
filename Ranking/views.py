@@ -1,7 +1,8 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, HttpResponseBadRequest
 import os
-from Usuario import script_criar_usuarios, script_jogos_anteriores
+from Usuario import script_criar_usuarios
+from Jogo import script_jogos_anteriores
 
 @staff_member_required
 def executar_criar_usuarios(request):
