@@ -99,7 +99,7 @@ class SorteioListView(ListView, LoginRequiredMixin):
             sorteio.total_partidas = total
             sorteio.total_pedidos = total_pedidos
 
-            usuario = User.objects.get(pk=self.request.user.pk)
+            usuario = self.request.user
 
             interesse = InteresseJogo.objects.filter(
                 jogador=self.request.user,
