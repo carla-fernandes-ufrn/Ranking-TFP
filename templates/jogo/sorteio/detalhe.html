@@ -1,4 +1,5 @@
 {% extends 'base/base.html' %}
+{% load usuario_extras %}
 
 {% block conteudo %}
 <div class="card">
@@ -61,11 +62,11 @@
                 <p class="card-title mb-1">
                     <span style="font-size: 0.8rem;">
                         {% if partida.vencedor == partida.jogador1 %}
-                        <strong>{{ partida.jogador1 }}</strong> X {{ partida.jogador2 }}
+                        <strong>{{ partida.jogador1|nome_completo }}</strong> X {{ partida.jogador2|nome_completo }}
                         {% elif partida.vencedor == partida.jogador2 %}
-                        {{ partida.jogador1 }} X <strong>{{ partida.jogador2 }}</strong>
+                        {{ partida.jogador1|nome_completo }} X <strong>{{ partida.jogador2|nome_completo }}</strong>
                         {% else %}
-                        {{ partida.jogador1 }} X {{ partida.jogador2 }}
+                        {{ partida.jogador1|nome_completo }} X {{ partida.jogador2|nome_completo }}
                         {% endif %}
                     </span>
                 </p>
@@ -137,9 +138,10 @@
 
     {% elif sorteio.status == 'I' %}
       {% if user.is_superuser %}
-        <div>
-          <a class="btn btn-primary w-100 w-md-50 w-lg-30" href="{% url 'jogo:sortear' pk=sorteio.pk %}">Sortear</a>
-        </div>
+        <form method="post" action="{% url 'jogo:sortear' pk=sorteio.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary w-100 w-md-50 w-lg-30">Sortear</button>
+        </form>
         <br>
       {% endif %}
       <!-- TABELA INTERESSES -->
@@ -154,7 +156,7 @@
           <tbody>
             {% for item in interesses %}
               <tr>
-                <td>{{ item.usuario }}</td>
+                <td>{{ item.usuario|nome_completo }}</td>
                 <td>{{ item.quantidade }}</td>
               </tr>
             {% empty %}

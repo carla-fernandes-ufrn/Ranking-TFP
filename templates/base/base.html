@@ -7,26 +7,9 @@
     {% include 'base/navbar.html' %}
 
     <div class="container-fluid page-body-wrapper">
+      {% include 'base/vertical_menu.html' %}
       <div class="main-panel">
         <div class="content-wrapper">
-
-          <!-- <div class="page-header">
-            <h3 class="page-title">
-              <span class="page-title-icon bg-gradient-primary text-white me-2">
-                {% block icon_breadcrumbs %}{% endblock %}
-                <i class="mdi mdi-home"></i>
-              </span>
-              {% block titulo %}{% endblock %}
-            </h3>
-            <nav aria-label="breadcrumb">
-              <ul class="breadcrumb">
-                <li class="breadcrumb-item active" aria-current="page">
-                  <span></span>Overview 
-                  <i class="mdi mdi-alert-circle-outline icon-sm text-primary align-middle"></i>
-                </li>
-              </ul>
-            </nav>
-          </div> -->
 
           <!-- BLOCO DE CONTEÚDO COM ESTRUTURA DE GRID SEGURA -->
           <div class="row">
@@ -50,20 +33,5 @@
     </div> <!-- /page-body-wrapper -->
 
   {% include 'base/scripts.html' %}
-
-  <script>
-    $(document).ready(function(){
-      $('#id_telefone').mask('(00) 00000-0000');
-      var SPMaskBehavior = function (val) {
-        return val.replace(/\D/g, '').length === 11 ? '(00) 00000-0000' : '(00) 0000-00009';
-      },
-      spOptions = {
-        onKeyPress: function(val, e, field, options) {
-          field.mask(SPMaskBehavior.apply({}, arguments), options);
-        }
-      };
-      $('#id_telefone').mask(SPMaskBehavior, spOptions);
-    });
-  </script>
 </body>
 </html>

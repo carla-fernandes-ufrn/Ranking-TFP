@@ -29,4 +29,8 @@ urlpatterns = [
     path('partida/save/<int:partida_id>/', views.save_partida, name='partida-save'),
     path('partida/cancelar/<int:partida_id>/', views.cancelar_partida, name='partida-cancelar'),
     path('partida/locais/', views.lista_locais, name='lista-locais'),
+
+    # Temporada
+    path('temporadas/', views.TemporadaListView.as_view(), name="temporada-list"),
+    path('temporadas/<int:ano>/', views.TemporadaDetailView.as_view(), name="temporada-detail"),
 ]

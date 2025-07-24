@@ -45,6 +45,12 @@ class Placar(models.Model):
     tiebreak2jogador2 = models.PositiveBigIntegerField(null=True, blank=True, validators=[MinValueValidator(0)],verbose_name="Tie Break 2 Jogador 2")
     supertiejogador1 = models.PositiveBigIntegerField(null=True, blank=True, validators=[MinValueValidator(0)],verbose_name="Supertie Jogador 1")
     supertiejogador2 = models.PositiveBigIntegerField(null=True, blank=True, validators=[MinValueValidator(0)],verbose_name="Supertie Jogador 2")
+    vencedor_wo = models.ForeignKey(
+        User,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        verbose_name="Vencedor por WO"
+    )
     
     class Meta:
         verbose_name = "Placar"
@@ -76,6 +82,33 @@ class Partida(models.Model):
             'R': 'success',
             'N': 'danger'
         }.get(self.status, 'secondary')
+    
+    @property
+    def vencedor(self):
+        if not self.placar:
+            return None
+
+        sets_j1 = 0
+        sets_j2 = 0
+
+        if self.placar.set1jogador1 is not None and self.placar.set1jogador2 is not None:
+            sets_j1 += self.placar.set1jogador1 > self.placar.set1jogador2
+            sets_j2 += self.placar.set1jogador2 > self.placar.set1jogador1
+
+        if self.placar.set2jogador1 is not None and self.placar.set2jogador2 is not None:
+            sets_j1 += self.placar.set2jogador1 > self.placar.set2jogador2
+            sets_j2 += self.placar.set2jogador2 > self.placar.set2jogador1
+
+        if self.placar.supertiejogador1 is not None and self.placar.supertiejogador2 is not None:
+            sets_j1 += self.placar.supertiejogador1 > self.placar.supertiejogador2
+            sets_j2 += self.placar.supertiejogador2 > self.placar.supertiejogador1
+
+        if sets_j1 > sets_j2:
+            return self.jogador1
+        elif sets_j2 > sets_j1:
+            return self.jogador2
+        else:
+            return None
 
     def save(self, *args, **kwargs):
         status_map = {'R': 1, 'M': 2, 'S': 3, 'N': 4}

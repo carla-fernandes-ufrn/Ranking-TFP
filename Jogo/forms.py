@@ -42,6 +42,7 @@ class PlacarForm(forms.ModelForm):
             'tiebreak2jogador2',
             'supertiejogador1',
             'supertiejogador2',
+            'vencedor_wo'
         ]
         widgets = {
             field: forms.NumberInput(attrs={'min': 0, 'class': 'form-control'})

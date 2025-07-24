@@ -12,6 +12,10 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.db.models import Q
 from django.utils.timezone import localtime
+from django.views.generic import TemplateView
+from django.db.models import Q, Count, F, Case, When, IntegerField, Value, CharField
+from django.db.models.functions import Concat
+from django.db.models.functions import ExtractYear
 
 from django.contrib.auth.models import User
 
@@ -31,7 +35,7 @@ from Usuario.models import Usuario
 # HOME
 # ======================
 
-class HomeView(View):
+class HomeView(LoginRequiredMixin, View):
     def get(self, request):
         today = timezone.now()
         mes_atual = today.month
@@ -73,7 +77,7 @@ class HomeView(View):
 # SORTEIO
 # ======================
 
-class SorteioListView(ListView):
+class SorteioListView(ListView, LoginRequiredMixin):
     model = Sorteio
     template_name = 'jogo/sorteio/listar.html'
     context_object_name = 'lista_sorteios'
@@ -106,7 +110,7 @@ class SorteioListView(ListView):
 
         return qs
 
-class SorteioDetailView(DetailView):
+class SorteioDetailView(DetailView, LoginRequiredMixin):
     model = Sorteio
     template_name = 'jogo/sorteio/detalhe.html'
     context_object_name = 'sorteio'
@@ -125,11 +129,12 @@ class SorteioDetailView(DetailView):
             status = self.request.GET.get('status')
 
             if nome:
-                partidas = partidas.filter(
-                    Q(jogador1__first_name__icontains=nome) |
-                    Q(jogador1__last_name__icontains=nome) |
-                    Q(jogador2__first_name__icontains=nome) |
-                    Q(jogador2__last_name__icontains=nome)
+                partidas = partidas.annotate(
+                    nome_jogador1=Concat('jogador1__first_name', Value(' '), 'jogador1__last_name', output_field=CharField()),
+                    nome_jogador2=Concat('jogador2__first_name', Value(' '), 'jogador2__last_name', output_field=CharField())
+                ).filter(
+                    Q(nome_jogador1__icontains=nome) |
+                    Q(nome_jogador2__icontains=nome)
                 )
             if data:
                 partidas = partidas.filter(data__date=data)
@@ -176,7 +181,7 @@ class SorteioDetailView(DetailView):
                         elif sets_j2 > sets_j1:
                             vencedor = partida.jogador2
 
-                partida.vencedor = vencedor
+                # partida.vencedor = vencedor
 
             context['partidas'] = partidas
 
@@ -195,19 +200,19 @@ class SorteioDetailView(DetailView):
 
         return context
 
-class SorteioCreateView(CreateView):
+class SorteioCreateView(CreateView, LoginRequiredMixin):
     model = Sorteio
     form_class = SorteioForm
     template_name = 'sorteio/form.html'
     success_url = reverse_lazy('jogo:sorteio-list')
 
-class SorteioUpdateView(UpdateView):
+class SorteioUpdateView(UpdateView, LoginRequiredMixin):
     model = Sorteio
     form_class = SorteioForm
     template_name = 'sorteio/form.html'
     success_url = reverse_lazy('jogo:sorteio-list')
 
-class SorteioDeleteView(DeleteView):
+class SorteioDeleteView(DeleteView, LoginRequiredMixin):
     model = Sorteio
     template_name = 'sorteio/confirm_delete.html'
     success_url = reverse_lazy('jogo:sorteio-list')
@@ -251,6 +256,7 @@ def interesse_salvar(request):
 # PARTIDA
 # ======================
 
+@login_required
 def get_partida(request, partida_id):
     partida = get_object_or_404(Partida, pk=partida_id)
     data = {
@@ -260,6 +266,7 @@ def get_partida(request, partida_id):
     }
     return JsonResponse(data)
 
+@login_required
 def save_partida(request, partida_id):
     partida = get_object_or_404(Partida, pk=partida_id)
     if request.method == 'POST':
@@ -284,6 +291,7 @@ def save_partida(request, partida_id):
         partida.save()
         return JsonResponse({'success': True})
 
+@login_required
 def cancelar_partida(request, partida_id):
     partida = get_object_or_404(Partida, pk=partida_id)
     partida.status = 'N'  # Não-realizado
@@ -298,6 +306,7 @@ def cancelar_partida(request, partida_id):
     partida.save()
     return JsonResponse({'success': True})
 
+@login_required
 def lista_locais(request):
     locais = list(Local.objects.values('id', 'nome'))
     return JsonResponse(locais, safe=False)
@@ -306,6 +315,7 @@ def lista_locais(request):
 # PLACAR
 # ======================
 
+@login_required
 def get_placar(request, partida_id):
     partida = get_object_or_404(Partida, pk=partida_id)
     if partida.placar:
@@ -329,11 +339,11 @@ def get_placar(request, partida_id):
         data = {}
     return JsonResponse(data)
 
+@login_required
 def save_placar(request, partida_id):
     partida = get_object_or_404(Partida, pk=partida_id)
 
     if request.method == 'POST':
-        print("entrou")
         if partida.placar:
             placar = partida.placar
         else:
@@ -341,7 +351,6 @@ def save_placar(request, partida_id):
 
         form = PlacarForm(request.POST, instance=placar)
         if form.is_valid():
-            print("sim")
             placar = form.save()
             if not partida.placar:
                 partida.placar = placar
@@ -349,6 +358,7 @@ def save_placar(request, partida_id):
 
             # Atualiza a duração da partida!
             partida.duracao = form.cleaned_data.get('duracao')
+            partida.status = 'R'
             partida.save()
 
             return JsonResponse({'success': True})
@@ -356,14 +366,97 @@ def save_placar(request, partida_id):
             return JsonResponse({'success': False, 'errors': form.errors})
 
 # ======================
+# TEMPORADA
+# ======================
+
+class TemporadaListView(TemplateView):
+    template_name = 'jogo/temporada/lista.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        anos = (
+            Sorteio.objects
+            .values_list('ano', flat=True)
+            .distinct()
+            .order_by('-ano')
+        )
+
+        context['anos'] = anos
+        return context
+    
+class TemporadaDetailView(TemplateView):
+    template_name = 'jogo/temporada/detalhe.html'
+
+    def get_context_data(self, **kwargs):
+        ano = kwargs['ano']
+        context = super().get_context_data(**kwargs)
+
+        # Todas partidas do ano
+        partidas = Partida.objects.filter(
+            sorteio__ano=ano
+        ).select_related('jogador1', 'jogador2', 'placar')
+
+        # Inicializa placar por jogadora
+        placares = {}
+
+        for partida in partidas:
+            j1 = partida.jogador1
+            j2 = partida.jogador2
+
+            # Decide quem ganhou
+            vencedor = partida.vencedor if hasattr(partida, 'vencedor') else None
+            status = partida.status
+
+            for jogador in [j1, j2]:
+                if jogador not in placares:
+                    placares[jogador] = {
+                        'ganhos': 0,
+                        'perdidos': 0,
+                        'nao_jogados': 0,
+                        'pontos': 0
+                    }
+
+            if status == 'N':
+                # Não realizado
+                placares[j1]['nao_jogados'] += 1
+                placares[j2]['nao_jogados'] += 1
+            elif vencedor == j1:
+                placares[j1]['ganhos'] += 1
+                placares[j2]['perdidos'] += 1
+            elif vencedor == j2:
+                placares[j2]['ganhos'] += 1
+                placares[j1]['perdidos'] += 1
+            else:
+                # Partida sem placar ainda?
+                placares[j1]['nao_jogados'] += 1
+                placares[j2]['nao_jogados'] += 1
+
+        # Calcula pontos
+        ranking = []
+        for jogador, stats in placares.items():
+            pontos = stats['ganhos'] * 100 + stats['perdidos'] * 50
+            stats['pontos'] = pontos
+            ranking.append((jogador, stats))
+
+        ranking = sorted(ranking, key=lambda x: x[1]['pontos'], reverse=True)
+
+        context['ano'] = ano
+        context['ranking'] = ranking
+
+        return context
+
+# ======================
 # SORTEIO ALEATÓRIO
 # ======================
 
+@login_required
 @require_POST
 @user_passes_test(lambda u: u.is_superuser)
 def sortear(request, pk):
     sorteio = get_object_or_404(Sorteio, pk=pk)
     realizar_sorteio(sorteio)
+    print(sorteio)
 
     return redirect('jogo:sorteio-detail', pk=pk)
 

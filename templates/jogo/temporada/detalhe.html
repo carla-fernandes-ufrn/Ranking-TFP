@@ -1,0 +1,61 @@
+{% extends 'base/base.html' %}
+
+{% block conteudo %}
+
+<div class="card">
+  <div class="card-body">
+    <h4 class="card-title">Temporadas</h4>
+
+    {% if anos %}
+      <div class="row">
+        {% for ano in anos %}
+          <div class="col-12 col-md-4">
+            <div class="card border border-secondary h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="clearfix">
+                        <a href="{% url 'jogo:temporada-detail' ano %}">
+                            <h4 class="card-title float-start">{{ ano }}</h4>
+                        </a>
+                    </div>
+                </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">
+        Nenhuma temporada encontrada.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="container">
+  <h2>Ranking da Temporada {{ ano }}</h2>
+
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Jogadora</th>
+        <th>Ganhos</th>
+        <th>Perdidos</th>
+        <th>Não jogados</th>
+        <th>Pontos</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for jogadora, stats in ranking %}
+        <tr>
+          <td>{{ jogadora }}</td>
+          <td>{{ stats.ganhos }}</td>
+          <td>{{ stats.perdidos }}</td>
+          <td>{{ stats.nao_jogados }}</td>
+          <td>{{ stats.pontos }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Nenhuma partida encontrada para este ano.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

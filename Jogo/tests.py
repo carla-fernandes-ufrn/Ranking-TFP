@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from datetime import date
 import random
 
+from django.contrib.auth.models import User
+
 from Jogo.models import Usuario, Sorteio, InteresseJogo, Partida
 from Jogo.views import realizar_sorteio  # ajuste o import conforme sua estrutura
 
@@ -14,13 +16,10 @@ class SorteioTestCase(TestCase):
         # Criar 50 jogadoras
         self.jogadoras = []
         for i in range(1, 51):
-            user = Usuario.objects.create(
+            user = User.objects.create(
                 username=f'tenis_user_{i}',
                 first_name=f'Jogadora{i}',
-                last_name='Teste',
-                telefone='99999-0000',
-                data_nascimento='1990-01-01',
-                status='A'
+                last_name='Teste'
             )
             self.jogadoras.append(user)
 
