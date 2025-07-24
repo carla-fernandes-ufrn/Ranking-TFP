@@ -16,10 +16,17 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from .views import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('Jogo.urls', namespace='jogo')),
     path('usuario/', include('Usuario.urls', namespace='usuario')),
     path('tfp/', include('Jogo.urls', namespace='jogo')),
+    # https://ranking-tfp.onrender.com/executar/criar-usuarios/
+    path("executar/criar-usuarios/", executar_criar_usuarios),
+    # https://ranking-tfp.onrender.com/executar/importar-jogos/?arquivo=sorteio_rodada_maio.xlsx&mes=5&ano=2025
+    # https://ranking-tfp.onrender.com/executar/importar-jogos/?arquivo=Confrontos_Junho.xlsx&mes=6&ano=2025
+    # https://ranking-tfp.onrender.com/executar/importar-jogos/?arquivo=Sorteio_Rodada_Julho_Tenis.xlsx&mes=7&ano=2025
+    path("executar/importar-jogos/", executar_importar_jogos),
 ]
