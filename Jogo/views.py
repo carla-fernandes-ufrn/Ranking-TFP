@@ -42,7 +42,7 @@ class HomeView(LoginRequiredMixin, View):
         ano_atual = today.year
 
         # Usuário logado
-        usuario = User.objects.get(pk=request.user.pk)
+        usuario = request.user
 
         # Sorteio do mês atual
         sorteio = Sorteio.objects.filter(mes=mes_atual, ano=ano_atual).first()
