@@ -22,6 +22,17 @@
       {% endif %}
     </h4>
 
+    {% if sorteio.status == 'I' or sorteio.status == 'S' %}
+      <div class="mb-3">
+        <a href="{% url 'jogo:exportar-xlsx' pk=sorteio.pk %}" class="btn btn-outline-success btn-sm">
+          <i class="fa fa-file-excel"></i> Exportar XLSX
+        </a>
+        <a href="{% url 'jogo:exportar-pdf' pk=sorteio.pk %}" class="btn btn-outline-danger btn-sm">
+          <i class="fa fa-file-pdf"></i> Exportar PDF
+        </a>
+      </div>
+    {% endif %}
+
     {% if sorteio.status == 'S' %}
 
       <!-- COLLAPSE FILTRO -->
