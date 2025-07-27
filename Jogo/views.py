@@ -12,10 +12,21 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.db.models import Q
 from django.utils.timezone import localtime
+from django.utils.timezone import now
 from django.views.generic import TemplateView
 from django.db.models import Q, Count, F, Case, When, IntegerField, Value, CharField
 from django.db.models.functions import Concat
 from django.db.models.functions import ExtractYear
+
+import io
+import openpyxl
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 from django.contrib.auth.models import User
 
@@ -37,7 +48,7 @@ from Usuario.models import Usuario
 
 class HomeView(LoginRequiredMixin, View):
     def get(self, request):
-        today = timezone.now()
+        today = now().date()
         mes_atual = today.month
         ano_atual = today.year
 
@@ -45,32 +56,60 @@ class HomeView(LoginRequiredMixin, View):
         usuario = request.user
 
         # Sorteio do mês atual
-        sorteio = Sorteio.objects.filter(mes=mes_atual, ano=ano_atual).first()
+        sorteio_atual = Sorteio.objects.filter(mes=mes_atual, ano=ano_atual).first()
         total_pedidos = 0
-        interesse = None
+        interesse_atual = None
 
-        if sorteio:
-            total_pedidos = sorteio.interesses_jogo.aggregate(total=Sum('quantidade'))['total'] or 0
-            interesse = InteresseJogo.objects.filter(jogador=usuario, sorteio=sorteio).first()
-
-            total = sorteio.partidas.count()
-            concluido = sorteio.partidas.filter(status__in=['R', 'N']).count()
+        if sorteio_atual:
+            total_pedidos = sorteio_atual.interesses_jogo.aggregate(total=Sum('quantidade'))['total'] or 0
+            interesse_atual = InteresseJogo.objects.filter(jogador=usuario, sorteio=sorteio_atual).first()
+            total = sorteio_atual.partidas.count()
+            concluido = sorteio_atual.partidas.filter(status__in=['R', 'N']).count()
             progresso = int((concluido / total) * 100) if total > 0 else 0
 
-            sorteio.total_pedidos = total_pedidos
-            sorteio.interesse_do_user = interesse
-            sorteio.progresso = progresso
+            sorteio_atual.total_pedidos = total_pedidos
+            sorteio_atual.interesse_do_user = interesse_atual
+            sorteio_atual.progresso = progresso
 
-        # Partidas do usuário no mês atual
+        # Buscar sorteio do mês seguinte
+        proximo_mes = mes_atual + 1
+        proximo_ano = ano_atual
+        if proximo_mes > 12:
+            proximo_mes = 1
+            proximo_ano += 1
+
+        sorteio_proximo = Sorteio.objects.filter(
+            mes=proximo_mes, ano=proximo_ano,
+            data_inicio_interesses__lt=today
+        ).first()
+
+        if sorteio_proximo:
+            interesse_proximo = InteresseJogo.objects.filter(jogador=usuario, sorteio=sorteio_proximo).first()
+            sorteio_proximo.interesse_do_user = interesse_proximo or None
+            sorteio_proximo.total_pedidos = sorteio_proximo.interesses_jogo.aggregate(total=Sum('quantidade'))['total'] or 0
+            total = sorteio_proximo.partidas.count()
+            concluido = sorteio_proximo.partidas.filter(status__in=['R', 'N']).count()
+            sorteio_proximo.progresso = int((concluido / total) * 100) if total > 0 else 0
+
+        # Partidas do mês atual
         partidas = Partida.objects.filter(
             Q(jogador1=usuario) | Q(jogador2=usuario),
             sorteio__mes=mes_atual,
             sorteio__ano=ano_atual
         ).select_related('placar', 'local')
 
+        partidas_proximas = []
+        if sorteio_proximo and sorteio_proximo.status == 'S':
+            partidas_proximas = Partida.objects.filter(
+                Q(jogador1=usuario) | Q(jogador2=usuario),
+                sorteio=sorteio_proximo
+            ).select_related('placar', 'local')
+
         return render(request, 'home.html', {
-            'sorteio': sorteio,
-            'partidas': partidas
+            'sorteio': sorteio_atual,
+            'sorteio_proximo': sorteio_proximo,
+            'partidas': partidas,
+            'partidas_proximas': partidas_proximas
         })
 
 # ======================
@@ -199,6 +238,133 @@ class SorteioDetailView(DetailView, LoginRequiredMixin):
             context['interesses'] = lista
 
         return context
+    
+@login_required
+def exportar_sorteio_xlsx(request, pk):
+    sorteio = get_object_or_404(Sorteio, pk=pk)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Sorteio {sorteio.mes}-{sorteio.ano}"
+
+    if sorteio.status == 'I':
+        ws.append(["Nome", "Quantidade de Jogos"])
+        for interesse in sorteio.interesses_jogo.select_related("jogador"):
+            nome = f"{interesse.jogador.first_name} {interesse.jogador.last_name}"
+            ws.append([nome, interesse.quantidade])
+    elif sorteio.status == 'S':
+        ws.append([
+            "Jogador 1", "Jogador 2", "Status", "Local", "Data", "Hora",
+            "Set1 J1", "Set1 J2", "TB1 J1", "TB1 J2",
+            "Set2 J1", "Set2 J2", "TB2 J1", "TB2 J2",
+            "Supertie J1", "Supertie J2", "WO"
+        ])
+        for partida in sorteio.partidas.select_related("jogador1", "jogador2", "local", "placar"):
+            placar = partida.placar
+            ws.append([
+                f"{partida.jogador1.first_name} {partida.jogador1.last_name}",
+                f"{partida.jogador2.first_name} {partida.jogador2.last_name}",
+                partida.get_status_display(),
+                partida.local.nome if partida.local else "",
+                partida.data.strftime("%d/%m/%Y") if partida.data else "",
+                partida.data.strftime("%H:%M") if partida.data else "",
+                placar.set1jogador1 if placar else "",
+                placar.set1jogador2 if placar else "",
+                placar.tiebreak1jogador1 if placar else "",
+                placar.tiebreak1jogador2 if placar else "",
+                placar.set2jogador1 if placar else "",
+                placar.set2jogador2 if placar else "",
+                placar.tiebreak2jogador1 if placar else "",
+                placar.tiebreak2jogador2 if placar else "",
+                placar.supertiejogador1 if placar else "",
+                placar.supertiejogador2 if placar else "",
+                f"{placar.vencedor_wo.first_name} {placar.vencedor_wo.last_name}" if placar and placar.vencedor_wo else ""
+            ])
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    filename = f"sorteio_{sorteio.mes}_{sorteio.ano}.xlsx"
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+@login_required
+def exportar_sorteio_pdf(request, pk):
+    sorteio = get_object_or_404(Sorteio, pk=pk)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="sorteio_{sorteio.mes}_{sorteio.ano}.pdf"'
+
+    buffer = []
+    if sorteio.status == 'S':
+        page_orientation = landscape(A4)
+    else:
+        page_orientation = A4
+
+    doc = SimpleDocTemplate(response, pagesize=page_orientation)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    title = f"Sorteio {sorteio.mes}/{sorteio.ano}"
+    elements.append(Paragraph(title, styles['Title']))
+    elements.append(Spacer(1, 12))
+
+    if sorteio.status == 'I':
+        data = [["Nome", "Quantidade de Jogos"]]
+        for interesse in sorteio.interesses_jogo.select_related("jogador"):
+            nome = f"{interesse.jogador.first_name} {interesse.jogador.last_name}"
+            data.append([nome, interesse.quantidade])
+
+    elif sorteio.status == 'S':
+        data = [[
+            "Jogador 1", "Jogador 2", "Status", "Local", "Data", "Hora",
+            "Set1 J1", "Set1 J2", "TB1 J1", "TB1 J2",
+            "Set2 J1", "Set2 J2", "TB2 J1", "TB2 J2",
+            "Super J1", "Super J2", "WO"
+        ]]
+
+        for partida in sorteio.partidas.select_related("jogador1", "jogador2", "local", "placar"):
+            placar = partida.placar
+            data.append([
+                f"{partida.jogador1.first_name} {partida.jogador1.last_name}",
+                f"{partida.jogador2.first_name} {partida.jogador2.last_name}",
+                partida.get_status_display(),
+                partida.local.nome if partida.local else "",
+                partida.data.strftime("%d/%m/%Y") if partida.data else "",
+                partida.data.strftime("%H:%M") if partida.data else "",
+                placar.set1jogador1 if placar else "",
+                placar.set1jogador2 if placar else "",
+                placar.tiebreak1jogador1 if placar else "",
+                placar.tiebreak1jogador2 if placar else "",
+                placar.set2jogador1 if placar else "",
+                placar.set2jogador2 if placar else "",
+                placar.tiebreak2jogador1 if placar else "",
+                placar.tiebreak2jogador2 if placar else "",
+                placar.supertiejogador1 if placar else "",
+                placar.supertiejogador2 if placar else "",
+                f"{placar.vencedor_wo.first_name} {placar.vencedor_wo.last_name}" if placar and placar.vencedor_wo else ""
+            ])
+
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),    # Cabeçalho
+        ('FONTSIZE', (0, 1), (-1, -1), 7),   # Corpo da tabela (reduzido para caber mais)
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 0.25, colors.black),
+    ]))
+
+
+    elements.append(table)
+    doc.build(elements)
+    return response
+
 
 class SorteioCreateView(CreateView, LoginRequiredMixin):
     model = Sorteio
@@ -227,7 +393,7 @@ def interesse_salvar(request):
     sorteio_id = request.POST.get('sorteio')
     sorteio = get_object_or_404(Sorteio, pk=sorteio_id)
 
-    usuario = User.objects.get(pk=request.user.pk)
+    usuario = request.user
 
     interesse, created = InteresseJogo.objects.get_or_create(
         jogador=usuario,

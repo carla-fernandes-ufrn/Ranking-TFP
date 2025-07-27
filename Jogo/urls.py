@@ -15,6 +15,8 @@ urlpatterns = [
     path('sorteios/novo/', views.SorteioCreateView.as_view(), name='sorteio-create'),
     path('sorteios/<int:pk>/editar/', views.SorteioUpdateView.as_view(), name='sorteio-update'),
     path('sorteios/<int:pk>/excluir/', views.SorteioDeleteView.as_view(), name='sorteio-delete'),
+    path('sorteio/<int:pk>/exportar-xlsx/', views.exportar_sorteio_xlsx, name='exportar-xlsx'),
+    path('sorteio/<int:pk>/exportar-pdf/', views.exportar_sorteio_pdf, name='exportar-pdf'),
 
     # InteresseJogo
     path('interesses/salvar/', views.interesse_salvar, name='interesse-save'),
